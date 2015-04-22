@@ -1,0 +1,2 @@
+# geneticAlgo
+N queens problem
