@@ -1,94 +1,31 @@
-from copy import copy
-import random
-import sys
-import time
-from argparser import parse_args
+from arg_cleaner import ArgumentCleaner
 
 
-def get_children(parents, limit, board_size, mutation=0):
-    total_errors = 0
-    for parent in parents:
-        parent['errors'] = 0
-        for i in range(0, len(parent['places'])-1):
-            for j in range(i+1, len(parent['places'])):
-                if (j - i) == abs(parent['places'][j] - parent['places'][i]):
-                    parent['errors'] += 1
-        total_errors += parent['errors']
-    total_errors //= board_size-1
+class MainMenu:
 
-    ok_parents = []
-    for parent in parents:
-        if parent['errors'] <= total_errors:
-            ok_parents.append(parent)
+    def __init__(self):
+        self.sim_params = {}
 
-    random.shuffle(ok_parents)
+    def get_choice(self, choice):
+        return ({
+            1: self.set_parameters,
+            0: exit
+        }).get(choice, self.error)
 
-    children = []
-    min_error = ([], sys.maxint)
-    for i in range(0, len(ok_parents)-1):
-        for j in range(i+1, len(ok_parents)):
+    def set_parameters(self):
+        print("Введите параметры симуляции:")
+        self.sim_params["board_size"] = ArgumentCleaner.clean_board_size(input("Введите размер доски (от 4 до 30)\n"))
 
-            child = {'id': i, 'parents': (i, j), 'errors': 0, 'places': copy(ok_parents[i]['places'])}
-            fixed = []
+    def error(self):
+        print("Неверный выбор")
 
-            for k in range(0, board_size):
-                if ok_parents[i]['places'][k] == ok_parents[j]['places'][k]:
-                    fixed.append((k, ok_parents[i]['places'][k]))
+    def show(self):
+        while True:
+            try:
+                self.get_choice(int(input("Добрый вечер\n")))()
+            except TypeError:
+                print("Неверный выбор")
 
-            random.shuffle(child['places'])
 
-            for pos, item in fixed:
-                index = child['places'].index(item)
-                child['places'][pos], child['places'][index] = child['places'][index], child['places'][pos]
-
-            if mutation >= random.randint(1, 100):
-                a = random.randint(0, board_size-1)
-                b = random.randint(0, board_size-1)
-                child['places'][a], child['places'][b] = child['places'][b], child['places'][a]
-
-            for ii in range(0, len(child['places'])-1):
-                for jj in range(ii+1, len(child['places'])):
-                    if (jj - ii) == abs(child['places'][jj] - child['places'][ii]):
-                        child['errors'] += 1
-            if min_error[1] > child['errors']:
-                min_error = (child['places'], child['errors'])
-            if min_error[1] == 0:
-                break
-
-            children.append(child)
-            if len(children) >= limit or min_error[1] == 0:
-                break
-
-        if len(children) >= limit or min_error[1] == 0:
-            break
-
-    print(len(children))
-    return min_error[1], min_error[0], children
-
-if __name__ == '__main__':
-    args = parse_args()
-    N = args.board_size
-    pop_limit = args.limit
-    mutation = args.mutation if args.mutation else 0
-
-    retries = 0
-    error = sys.maxint
-
-    while error > 0:
-        parents = [{'places': [x for x in range(0, N)], 'errors': 0} for x in range(0, N)]
-        for parent in parents:
-            random.shuffle(parent['places'])
-
-        error = sys.maxint
-        best_child = []
-
-        start = time.time()
-        while error > 0:
-            if len(parents) <= 0 or len(parents) >= pop_limit:
-                break
-
-            error, best_child, parents = get_children(parents, limit=pop_limit, board_size=N, mutation=mutation)
-        end = time.time()
-
-        print("Epoch = {}s".format(end - start))
-        print(error, best_child)
+if __name__ == "__main__":
+    MainMenu().show()
