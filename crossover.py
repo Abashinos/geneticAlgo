@@ -3,7 +3,7 @@ import random
 from typing import List
 
 
-def crossover(chromosomes: List[int]):
+def crossover(chromosomes: List[List[int]]):
     children = []
     for i in range(len(chromosomes) - 1):
         for j in range(i + 1, len(chromosomes)):
@@ -30,7 +30,7 @@ def crossover(chromosomes: List[int]):
     return children
 
 
-def gemmation(chromosomes: List[int]):
+def gemmation(chromosomes: List[List[int]]):
     return None  # TODO
 
 

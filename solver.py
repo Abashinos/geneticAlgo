@@ -1,5 +1,6 @@
-from typing import List, Tuple
+from typing import List
 from crossover import get_crossover_function
+from mutation import mutate
 
 import argparser
 import random
@@ -11,11 +12,15 @@ class Solver:
         self.initial_population_size = max(args['initial_population'], self.board_size)
         self.max_population_size = args['population_size'] if args.get('population_size') else 0
         self.generation_limit = args['generation_limit']
+        self.mutate = mutate
         self.mutation_chance = args.get('mutation_chance', 0.0)
         self.crossover = get_crossover_function(args.get('crossover_type'))
-        self.crossover_strategy = max(min(args.get('crossover_strategy'), 1), 0.01)
+        self.crossover_percent = max(min(args.get('crossover_strategy'), 1), 0.01)
         self.selection_percent = max(min(args['selection'], 1), 0.01) if args.get('selection') else 1
+        self.verbose = args['verbose']
+
         self.population = []
+        self.current_generation = 0
 
     @staticmethod
     def gene_error(gene, chromosome):
@@ -30,37 +35,78 @@ class Solver:
 
     @staticmethod
     def _fitness(chromosome: List):
-        return sum(map(lambda gene: Solver.gene_error(gene, chromosome), chromosome)) / 2
+        return sum(map(lambda gene: Solver.gene_error(gene, chromosome), chromosome)) // 2
 
     @staticmethod
     def fitness(chromosome: List[int]):
         return Solver._fitness(list(enumerate(chromosome)))
 
-    @staticmethod
-    def population_fitness(chromosomes: List[List]):
-        return list(map(Solver.fitness, chromosomes))
+    def map_population_with_fitness(self, population, sort=True):
+        mapped_population = [(candidate, self.fitness(candidate)) for candidate in population]
+        return sorted(mapped_population, key=lambda k: k[1]) if sort else mapped_population
+
+    def set_population(self, population: List[List[int]]):
+        self.population = self.map_population_with_fitness(population)
+
+    def add_to_population(self, new_candidates: List[List[int]]):
+        self.population = sorted(self.population + self.map_population_with_fitness(new_candidates, sort=False), key=lambda k: k[1])
 
     def generate_population(self):
-        self.population = [
+        self.set_population([
             sorted(list(range(self.board_size)), key=lambda k: random.random())
             for _ in range(self.initial_population_size)
-        ]
+        ])
+
+    def print_current_status(self, step=""):
+        print("\n{0}\nCurrent status\nGeneration #{1}\nPopulation size: {2}\nPopulation sorted by fitness:\n{3}"
+              .format(step, self.current_generation, len(self.population), self.population))
 
     def test(self):
-        chromosomes = [[1, 3, 0, 2], [0, 1, 3, 2], [1, 0, 3, 2], [0, 1, 2, 3]]
-        fitness = Solver.population_fitness(chromosomes)
-        assert fitness == [0, 2, 4, 6]
-
-        crossover_chromosomes = [[3, 0, 1, 2, 4], [3, 2, 1, 4, 0]]
-        child = get_crossover_function('crossover')(crossover_chromosomes)[0]
-        print(child)
-        assert (child[0], child[2]) == (3, 1)
+        pass
 
     def run(self):
+        # Generate initial population
         self.generate_population()
-        selected_population_count = round(len(self.population) * self.selection_percent)
-        print(selected_population_count)
-        print("{0} {1}\nPopulation: {2}".format(self.board_size, self.mutation_chance, self.population))
+        # TODO: print initial data
+
+        self.current_generation = 0
+        while self.current_generation <= self.generation_limit:
+            if self.verbose:
+                self.print_current_status("New generation step")
+
+            # Add crossover results to population
+            crossover_participants_count = round(len(self.population) * self.crossover_percent)
+            self.add_to_population(self.crossover([candidate[0] for candidate in self.population[:crossover_participants_count]]))
+
+            # Find best candidate
+            best_candidate = self.population[0]
+            self.current_generation += 1
+
+            if self.verbose:
+                self.print_current_status("Crossover step")
+
+            if best_candidate[1] == 0:
+                print("We have a winner: {0}".format(best_candidate[0]))
+                break
+            else:
+                print("The closest we've got is: {0}. Candidate: {1}".format(best_candidate[1], best_candidate[0]))
+                if self.current_generation >= self.generation_limit:
+                    break
+
+            # Filter best candidates for the new generation
+            if self.max_population_size <= 0:
+                selected_population_count = round(len(self.population) * self.selection_percent)
+                self.population = self.population[:selected_population_count]
+            else:
+                self.population = self.population[:self.max_population_size]
+
+            if self.verbose:
+                self.print_current_status("Selection step")
+
+            # Mutate population
+            self.set_population(self.mutate([candidate[0] for candidate in self.population], self.mutation_chance))
+            if self.verbose:
+                self.print_current_status("Mutation step")
 
 
 if __name__ == "__main__":
