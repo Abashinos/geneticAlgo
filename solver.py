@@ -1,9 +1,11 @@
+from functools import partial
 from typing import List
 from crossover import get_crossover_function
 from mutation import mutate
 
 import argparser
 import random
+
 
 class Solver:
 
@@ -14,7 +16,7 @@ class Solver:
         self.generation_limit = args['generation_limit']
         self.mutate = mutate
         self.mutation_chance = args.get('mutation_chance', 0.0)
-        self.crossover = get_crossover_function(args.get('crossover_type'))
+        self.crossover = partial(get_crossover_function(args.get('crossover_type')), chromosome_length=self.board_size)
         self.crossover_percent = max(min(args.get('crossover_strategy'), 1), 0.01)
         self.selection_percent = max(min(args['selection'], 1), 0.01) if args.get('selection') else 1
         self.verbose = args['verbose']
@@ -93,6 +95,13 @@ class Solver:
                 if self.current_generation >= self.generation_limit:
                     break
 
+            # Mutate population
+            self.set_population(self.mutate([candidate[0] for candidate in self.population],
+                                            self.board_size,
+                                            self.mutation_chance))
+            if self.verbose:
+                self.print_current_status("Mutation step")
+
             # Filter best candidates for the new generation
             if self.max_population_size <= 0:
                 selected_population_count = round(len(self.population) * self.selection_percent)
@@ -103,10 +112,7 @@ class Solver:
             if self.verbose:
                 self.print_current_status("Selection step")
 
-            # Mutate population
-            self.set_population(self.mutate([candidate[0] for candidate in self.population], self.mutation_chance))
-            if self.verbose:
-                self.print_current_status("Mutation step")
+
 
 
 if __name__ == "__main__":
