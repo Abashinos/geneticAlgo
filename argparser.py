@@ -15,13 +15,13 @@ def parse_args():
                         help='Mutation chance percent', default=0.0)
     parser.add_argument('-c', '--crossover_type', type=str, dest='crossover_type',
                         help='Crossover type', default='')
-    parser.add_argument('-C', '--crossover_strategy', type=float, dest='crossover_strategy',
+    parser.add_argument('-C', '--crossover_percent', type=float, dest='crossover_percent',
                         help='Fraction of population participating in crossover', default=0.5)
     parser.add_argument('-v', '-V', '--verbose', dest='verbose', action='store_true',
                         help='Flag which determines if every step should be printed')
 
     exclusive_group = parser.add_mutually_exclusive_group()
-    exclusive_group.add_argument('-P', '--max_population', type=int, dest='population_size',
+    exclusive_group.add_argument('-P', '--max_population', type=int, dest='max_population',
                         help='Max population size', default=0)
     exclusive_group.add_argument('-s', '-S', '--selection', type=float, dest='selection',
                         help='Fraction of selected population after each epoch', default=0.5)

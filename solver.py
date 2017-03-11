@@ -9,16 +9,19 @@ import random
 
 class Solver:
 
-    def __init__(self, args: dict = vars(argparser.parse_args())):
+    def __init__(self, args: dict = None):
+        if not args:
+            args = vars(argparser.parse_args())
+
         self.board_size = args['board_size']
         self.initial_population_size = max(args['initial_population'], self.board_size)
-        self.max_population_size = args['population_size'] if args.get('population_size') else 0
+        self.max_population_size = args['max_population'] if args.get('max_population') else 0
         self.generation_limit = args['generation_limit']
         self.mutate = mutate
         self.mutation_chance = args.get('mutation_chance', 0.0)
         self.crossover = partial(get_crossover_function(args.get('crossover_type')), chromosome_length=self.board_size)
-        self.crossover_percent = max(min(args.get('crossover_strategy'), 1), 0.01)
-        self.selection_percent = max(min(args['selection'], 1), 0.01) if args.get('selection') else 1
+        self.crossover_percent = max(min(args.get('crossover_percent'), 1), 0.01)
+        self.selection_percent = max(min(args.get('selection'), 1), 0.01) if args.get('selection') else 1
         self.verbose = args['verbose']
 
         self.population = []
@@ -72,7 +75,7 @@ class Solver:
         # TODO: print initial data
 
         self.current_generation = 0
-        while self.current_generation <= self.generation_limit:
+        while self.current_generation <= self.generation_limit or self.generation_limit == 0:
             if self.verbose:
                 self.print_current_status("New generation step")
 
@@ -92,7 +95,7 @@ class Solver:
                 break
             else:
                 print("The closest we've got is: {0}. Candidate: {1}".format(best_candidate[1], best_candidate[0]))
-                if self.current_generation >= self.generation_limit:
+                if self.current_generation >= self.generation_limit != 0:
                     break
 
             # Mutate population
@@ -111,8 +114,6 @@ class Solver:
 
             if self.verbose:
                 self.print_current_status("Selection step")
-
-
 
 
 if __name__ == "__main__":

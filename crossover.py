@@ -41,9 +41,12 @@ def gemmation(chromosomes: List[List[int]], chromosome_length: int):
     return children
 
 
+CROSSOVER_TYPES = {
+    'crossover': crossover,
+    'gemmation': gemmation,
+    'default': crossover
+}
+
+
 def get_crossover_function(name):
-    return ({
-        'crossover': crossover,
-        'gemmation': gemmation,
-        'default': crossover
-    }).get(name, crossover)
+    return CROSSOVER_TYPES.get(name, crossover)
